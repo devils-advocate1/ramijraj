@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  ethicaldrm:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=your-secret-key-change-in-production
+      - CONTENT_DIR=/app/encrypted_output
+      - MAX_TOKEN_DURATION=7200
+      - FLASK_ENV=production
+    volumes:
+      - ./encrypted_output:/app/encrypted_output
+      - ./temp_uploads:/app/temp_uploads
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - ethicaldrm-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./encrypted_output:/var/www/content:ro
+    depends_on:
+      - ethicaldrm
+    restart: unless-stopped
+    networks:
+      - ethicaldrm-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - ethicaldrm-network
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=ethicaldrm
+      - POSTGRES_USER=ethicaldrm
+      - POSTGRES_PASSWORD=change-this-password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - ethicaldrm-network
+
+  monitoring:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - ethicaldrm-network
+
+volumes:
+  redis_data:
+  postgres_data:
+  prometheus_data:
+
+networks:
+  ethicaldrm-network:
+    driver: bridge

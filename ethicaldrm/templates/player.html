@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EthicalDRM Protected Video Player</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+        
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        video {
+            width: 100%;
+            height: auto;
+            min-height: 400px;
+            display: block;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 0.3s ease;
+        }
+        
+        .video-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .token-form {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .token-form h3 {
+            margin-top: 0;
+            color: #4ecdc4;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .success {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #4ecdc4;
+        }
+        
+        .info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .protection-notice {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+        
+        .watermark {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            video {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 EthicalDRM Player</h1>
+            <p>Secure video streaming with content protection</p>
+        </div>
+        
+        <div class="video-container">
+            <video id="videoPlayer" controls preload="none" poster="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNjY2NjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+TG9hZGluZy4uLjwvdGV4dD48L3N2Zz4=">
+                Your browser does not support the video tag.
+            </video>
+            
+            <div class="video-overlay" id="videoOverlay">
+                <div class="token-form">
+                    <h3>🎫 Access Required</h3>
+                    <p>Please provide your access credentials to view this protected content.</p>
+                    
+                    <div class="form-group">
+                        <label for="tokenInput">Access Token:</label>
+                        <input type="password" id="tokenInput" placeholder="Enter your access token" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="videoIdInput">Video ID:</label>
+                        <input type="text" id="videoIdInput" placeholder="Enter video ID" />
+                    </div>
+                    
+                    <button onclick="loadVideo()" id="loadButton">🔓 Load Video</button>
+                    
+                    <div id="message"></div>
+                </div>
+            </div>
+            
+            <div class="watermark" id="watermark" style="display: none;">
+                EthicalDRM Protected
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>🛡️ Content Protection Active</h3>
+            <p>This video is protected by EthicalDRM technology. The content is encrypted and access is monitored. Unauthorized downloading, recording, or redistribution is prohibited and may result in legal action.</p>
+        </div>
+    </div>
+    
+    <div class="protection-notice" id="protectionNotice" style="display: none;">
+        ⚠️ Recording attempt detected!
+    </div>
+
+    <!-- EthicalDRM Protection Script -->
+    <script>
+        // Client-side protection
+        (function() {
+            'use strict';
+            
+            // Disable right-click context menu
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                showProtectionNotice("Right-click disabled for content protection");
+                return false;
+            });
+            
+            // Disable common keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Disable F12, Ctrl+Shift+I, Ctrl+U, etc.
+                if (e.keyCode === 123 || 
+                    (e.ctrlKey && e.shiftKey && e.keyCode === 73) ||
+                    (e.ctrlKey && e.keyCode === 85) ||
+                    (e.ctrlKey && e.shiftKey && e.keyCode === 74) ||
+                    (e.ctrlKey && e.keyCode === 83)) {
+                    e.preventDefault();
+                    showProtectionNotice("Keyboard shortcut disabled for content protection");
+                    return false;
+                }
+            });
+            
+            // Disable text selection
+            document.addEventListener('selectstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Disable drag and drop
+            document.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Monitor for screen recording APIs
+            if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+                const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+                navigator.mediaDevices.getDisplayMedia = function() {
+                    showProtectionNotice("Screen recording blocked by EthicalDRM");
+                    return Promise.reject(new Error('Screen recording is not allowed'));
+                };
+            }
+            
+            // Detect developer tools
+            let devtools = { open: false };
+            const threshold = 160;
+            
+            const checkDevTools = () => {
+                if (window.outerHeight - window.innerHeight > threshold || 
+                    window.outerWidth - window.innerWidth > threshold) {
+                    if (!devtools.open) {
+                        devtools.open = true;
+                        showProtectionNotice("Developer tools detected - access may be restricted");
+                    }
+                } else {
+                    devtools.open = false;
+                }
+            };
+            
+            setInterval(checkDevTools, 1000);
+            
+            // Clear console
+            if (typeof console !== 'undefined') {
+                console.clear();
+                console.log('%cEthicalDRM Protected Content', 'color: red; font-size: 24px; font-weight: bold;');
+                console.log('%cContent is protected. Unauthorized access is prohibited.', 'color: red; font-size: 16px;');
+            }
+        })();
+        
+        function showProtectionNotice(message) {
+            const notice = document.getElementById('protectionNotice');
+            notice.textContent = "⚠️ " + message;
+            notice.style.display = 'block';
+            setTimeout(() => {
+                notice.style.display = 'none';
+            }, 3000);
+        }
+        
+        function showMessage(message, type = 'info') {
+            const messageEl = document.getElementById('message');
+            messageEl.className = type;
+            messageEl.textContent = message;
+        }
+        
+        async function loadVideo() {
+            const token = document.getElementById('tokenInput').value.trim();
+            const videoId = document.getElementById('videoIdInput').value.trim();
+            const button = document.getElementById('loadButton');
+            
+            if (!token || !videoId) {
+                showMessage('Please enter both token and video ID', 'error');
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = '🔄 Loading...';
+            showMessage('Validating access...', 'info');
+            
+            try {
+                // Validate token first
+                const validateResponse = await fetch('/validate_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: token })
+                });
+                
+                if (!validateResponse.ok) {
+                    throw new Error('Invalid or expired token');
+                }
+                
+                // Get video stream URL
+                const streamUrl = `/get_stream/${videoId}.m3u8?token=${encodeURIComponent(token)}`;
+                
+                // Test if video exists and is accessible
+                const testResponse = await fetch(streamUrl);
+                if (!testResponse.ok) {
+                    throw new Error('Video not found or access denied');
+                }
+                
+                // Load video
+                const video = document.getElementById('videoPlayer');
+                
+                if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Native HLS support
+                    video.src = streamUrl;
+                } else if (typeof Hls !== 'undefined') {
+                    // Use HLS.js for browsers without native support
+                    const hls = new Hls();
+                    hls.loadSource(streamUrl);
+                    hls.attachMedia(video);
+                } else {
+                    throw new Error('HLS not supported in this browser');
+                }
+                
+                // Hide overlay and show video
+                document.getElementById('videoOverlay').classList.add('hidden');
+                document.getElementById('watermark').style.display = 'block';
+                
+                showMessage('Video loaded successfully!', 'success');
+                
+                // Start monitoring
+                startVideoMonitoring(video, token, videoId);
+                
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = '🔓 Load Video';
+            }
+        }
+        
+        function startVideoMonitoring(video, token, videoId) {
+            // Monitor video events
+            video.addEventListener('loadstart', () => {
+                console.log('EthicalDRM: Video loading started');
+            });
+            
+            video.addEventListener('play', () => {
+                console.log('EthicalDRM: Video playback started');
+                // Could send analytics to server here
+            });
+            
+            video.addEventListener('ended', () => {
+                console.log('EthicalDRM: Video playback completed');
+            });
+            
+            // Prevent video download
+            video.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showProtectionNotice("Video download disabled");
+            });
+            
+            // Monitor for suspicious activity
+            let suspiciousActivity = 0;
+            
+            document.addEventListener('keydown', (e) => {
+                // Count suspicious key combinations
+                if (e.ctrlKey || e.altKey) {
+                    suspiciousActivity++;
+                    if (suspiciousActivity > 10) {
+                        showProtectionNotice("Suspicious activity detected");
+                        // Could pause video or take other action
+                    }
+                }
+            });
+            
+            // Reset suspicious activity counter periodically
+            setInterval(() => {
+                suspiciousActivity = Math.max(0, suspiciousActivity - 1);
+            }, 30000);
+        }
+        
+        // URL parameter handling
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const videoId = urlParams.get('video');
+            
+            if (token) {
+                document.getElementById('tokenInput').value = token;
+            }
+            
+            if (videoId) {
+                document.getElementById('videoIdInput').value = videoId;
+            }
+            
+            // Auto-load if both parameters are present
+            if (token && videoId) {
+                loadVideo();
+            }
+        });
+    </script>
+    
+    <!-- Optional: Include HLS.js for better browser compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</body>
+</html>

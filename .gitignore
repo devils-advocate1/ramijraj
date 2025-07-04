@@ -1,0 +1,106 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# EthicalDRM specific
+encrypted_output/
+temp_uploads/
+demo_output/
+batch_output/
+logs/
+*.key
+*.m3u8
+*.ts
+content_fingerprints.db
+
+# Test files
+test_videos/
+demo_video.mp4
+sample_videos/
+
+# Docker
+docker-compose.override.yml
+
+# SSL certificates
+ssl/
+*.pem
+*.crt
+*.key
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration
+config.ini
+.env.local
+.env.production
+
+# Media files (except examples)
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv
+!examples/*.mp4
+
+# Jupyter
+.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
