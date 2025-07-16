@@ -1,0 +1,10 @@
+streamlit
+yfinance
+transformers
+torch
+pandas
+numpy
+tweepy
+ta-lib
+plotly
+python-dotenv
